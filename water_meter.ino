@@ -40,17 +40,10 @@
 
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
+#include "credentials.h"
 
 BlynkTimer timer;
 
-// You should get Auth Token in the Blynk App.
-// Go to the Project Settings (nut icon).
-char auth[] = "HLinezNzj6FIqqjY96NTQF9Y3T-9DF0J";
-
-// Your WiFi credentials.
-// Set password to "" for open networks.
-char ssid[] = "Fritt WiFi";
-char pass[] = "";
 
 #define SIGNAL_PIN 14
 #define T_MS_BLYNK_TIMER 3000L //!< [ms]
