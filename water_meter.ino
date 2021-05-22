@@ -46,7 +46,8 @@ BlynkTimer timer;
 
 
 #define SIGNAL_PIN 14
-#define T_MS_BLYNK_TIMER 3000L //!< [ms]
+#define T_MS_BLYNK_TIMER 5000L //!< [ms]
+#define V_L_PER_PULSE 10 //!< [L/s] Liter per pulse
 
 typedef struct {
   uint32_t t0;                //!< [ms]
@@ -55,6 +56,8 @@ typedef struct {
   uint32_t dtSampleTimestamp; //!< [ms] Delta time since last timestamp
   uint32_t tLastDebounce;     //!< [ms] Last debounce time
   uint32_t tDebounceDelay;    //!< [ms] Debounce delay time
+  float    qVolumeLPerS;      //!< [L/s] Volume flow
+  float    qVolumeM3PerH;     //!< [m3/h] Volume flow
 } watermeter_t;
 
 volatile watermeter_t watermeter;
@@ -74,17 +77,26 @@ void myTimerEvent()
   Blynk.virtualWrite(V1, watermeter.pulses);
   Blynk.virtualWrite(V2, watermeter.tSampleTimestamp);
   Blynk.virtualWrite(V3, watermeter.dtSampleTimestamp);
-  Serial.println(watermeter.pulses);
+  Blynk.virtualWrite(V4, watermeter.qVolumeLPerS);
+  Blynk.virtualWrite(V5, watermeter.qVolumeM3PerH);
+  Serial.print(watermeter.pulses);
+  Serial.print(" ");
+  Serial.print(watermeter.qVolumeLPerS);
+  Serial.print(" ");
+  Serial.println(watermeter.qVolumeM3PerH);
 }
 
                                                                                                       
 void IRAM_ATTR pinInterrupt(){
   uint32_t tNow = millis();
+
   if ((tNow - watermeter.tLastDebounce) > watermeter.tDebounceDelay) {
     ++watermeter.pulses;
     watermeter.dtSampleTimestamp = tNow-watermeter.tSampleTimestamp;
     watermeter.tSampleTimestamp = tNow;
     watermeter.tLastDebounce = tNow;
+    watermeter.qVolumeLPerS = V_L_PER_PULSE*1000/(float)watermeter.dtSampleTimestamp;
+    watermeter.qVolumeM3PerH = watermeter.qVolumeLPerS * 3.6;
   }
 }
 
@@ -94,10 +106,11 @@ void setup()
 {
                                                                                                                                       
     pinMode(SIGNAL_PIN, INPUT_PULLUP);
+    digitalWrite(SIGNAL_PIN, HIGH);
 
     attachInterrupt(SIGNAL_PIN, pinInterrupt, FALLING);
 
-  watermeter.tDebounceDelay = 50; // [ms]
+  watermeter.tDebounceDelay = 300; // [ms]
 
   // Debug console
   Serial.begin(115200);
